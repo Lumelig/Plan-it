@@ -1,0 +1,16 @@
+{
+  "name": "Plan-it CampusSwipe",
+  "short_name": "Plan-it",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#0f172a",
+  "description": "Swipe through campus events and find the perfect activities",
+  "icons": [
+    {
+      "src": "/logo_Plan_it.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

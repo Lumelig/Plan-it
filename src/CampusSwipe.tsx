@@ -25,11 +25,22 @@ import {
   Sun,
   Moon,
 } from "lucide-react";
+import {
+  computeLikeOpacity,
+  computeNopeOpacity,
+  toggleId,
+  eventMatches,
+} from "@/lib/helpers";
 
 // =============================
 // Types
 // =============================
-interface Event {
+interface BeforeInstallPromptEvent extends globalThis.Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>;
+}
+
+interface CampusEvent {
   id: number;
   title: string;
   date: string;
@@ -49,7 +60,7 @@ interface Friend {
 // =============================
 // Mock Data
 // =============================
-const MOCK_EVENTS: Event[] = [
+const MOCK_EVENTS: CampusEvent[] = [
   {
     id: 1,
     title: "AI x Campus Kickoff",
@@ -109,149 +120,9 @@ const CLUBS = [
 ];
 
 // =============================
-// Pure helpers + lightweight tests
-// =============================
-export function computeLikeOpacity(x: number): number {
-  // Fade in when dragging right past 40px, full at +120px
-  if (x <= 40) return 0;
-  return Math.min((x - 40) / 80, 1);
-}
-
-export function computeNopeOpacity(x: number): number {
-  // Fade in when dragging left past -40px, full at -120px
-  if (x >= -40) return 0;
-  return Math.min((-x - 40) / 80, 1);
-}
-
-export function computeRotate(x: number): number {
-  // Map -200..0..200 px drag to -12..0..12 degrees
-  if (x <= -200) return -12;
-  if (x >= 200) return 12;
-  return (x / 200) * 12; // linear piecewise within range
-}
-
-export function toggleId<T extends number | string>(arr: T[], id: T): T[] {
-  // Pure helper to add/remove an id from a list (idempotent toggle)
-  return arr.includes(id) ? arr.filter((x) => x !== id) : [...arr, id];
-}
-
-export function normalize(s: string): string {
-  return s.trim().toLowerCase();
-}
-
-export function eventMatches(
-  e: Event,
-  q: string,
-  clubs: string[]
-): boolean {
-  const qn = normalize(q);
-  const clubSet = new Set(clubs.map(normalize));
-  const tagHit = e.tags.some((t) => clubSet.has(normalize(t)));
-  const textHit = !qn
-    ? true
-    : e.title.toLowerCase().includes(qn) ||
-      e.location.toLowerCase().includes(qn) ||
-      e.tags.some((t) => t.toLowerCase().includes(qn));
-  const clubsActive = clubs.length > 0;
-  return textHit && (!clubsActive || tagHit);
-}
-
-function runDevTests() {
-  // Simple inline tests printed to console. Do not modify unless broken.
-  const approx = (a: number, b: number, e = 1e-6) => Math.abs(a - b) < e;
-  try {
-    // Opacity tests (like)
-    console.assert(approx(computeLikeOpacity(0), 0), "like @0");
-    console.assert(approx(computeLikeOpacity(40), 0), "like @40");
-    console.assert(approx(computeLikeOpacity(100), 0.75), "like @100");
-    console.assert(approx(computeLikeOpacity(120), 1), "like @120");
-    console.assert(approx(computeLikeOpacity(200), 1), "like cap");
-
-    // Opacity tests (nope)
-    console.assert(approx(computeNopeOpacity(0), 0), "nope @0");
-    console.assert(approx(computeNopeOpacity(-40), 0), "nope @-40");
-    console.assert(approx(computeNopeOpacity(-100), 0.75), "nope @-100");
-    console.assert(approx(computeNopeOpacity(-120), 1), "nope @-120");
-    console.assert(approx(computeNopeOpacity(-200), 1), "nope cap");
-
-    // Sanity: opposing drags shouldn't light the other label
-    console.assert(approx(computeLikeOpacity(-200), 0), "like should be 0 on left drag");
-    console.assert(approx(computeNopeOpacity(200), 0), "nope should be 0 on right drag");
-
-    // Boundary fuzz
-    console.assert(approx(computeLikeOpacity(41), 0.0125), "like small >40");
-    console.assert(approx(computeNopeOpacity(-41), 0.0125), "nope small <-40");
-
-    // Rotate tests
-    console.assert(approx(computeRotate(-200), -12), "rotate @-200");
-    console.assert(approx(computeRotate(0), 0), "rotate @0");
-    console.assert(approx(computeRotate(200), 12), "rotate @200");
-    console.assert(approx(computeRotate(100), 6), "rotate @100");
-
-    // toggleId tests
-    console.assert(
-      JSON.stringify(toggleId<number>([], 1)) === JSON.stringify([1]),
-      "toggle add empty"
-    );
-    console.assert(
-      JSON.stringify(toggleId<number>([1], 1)) === JSON.stringify([]),
-      "toggle remove single"
-    );
-    console.assert(
-      JSON.stringify(toggleId<number>([1, 2], 3)) === JSON.stringify([1, 2, 3]),
-      "toggle add new"
-    );
-    console.assert(
-      JSON.stringify(toggleId<number>([1, 2, 3], 2)) === JSON.stringify([1, 3]),
-      "toggle remove middle"
-    );
-
-    // eventMatches tests
-    const sample: Event = {
-      id: 99,
-      title: "Dance Coding Jam",
-      date: "",
-      location: "Hall",
-      tags: ["Coding", "Dance"],
-      img: "",
-      description: "",
-    };
-    console.assert(
-      eventMatches(sample, "", []) === true,
-      "match: empty query, no clubs"
-    );
-    console.assert(
-      eventMatches(sample, "coding", []) === true,
-      "match: query only"
-    );
-    console.assert(
-      eventMatches(sample, "", ["Dance"]) === true,
-      "match: club only"
-    );
-    console.assert(
-      eventMatches(sample, "jam", ["Dance"]) === true,
-      "match: query + club"
-    );
-    console.assert(
-      eventMatches(sample, "marathon", ["Dance"]) === false,
-      "no match: wrong query"
-    );
-
-    console.log("✅ Dev tests passed (CampusSwipe)");
-  } catch (e) {
-    console.error("❌ Dev tests failed", e);
-  }
-}
-
-// Run once in dev
-if (typeof window !== "undefined" && !(window as any).__RUN_CAMPUSWIPE_TESTS__ === false) {
-  runDevTests();
-}
-
-// =============================
 // UI Components
 // =============================
-function EventCard({ e }: { e: Event }) {
+function EventCard({ e }: { e: CampusEvent }) {
   return (
     <Card className="overflow-hidden rounded-2xl shadow-md">
       <div className="h-48 w-full bg-gray-100 overflow-hidden">
@@ -287,7 +158,7 @@ function SwipeCard({
   e,
   onSwipe,
 }: {
-  e: Event;
+  e: CampusEvent;
   onSwipe: (dir: "left" | "right") => void;
 }) {
   const x = useMotionValue(0);
@@ -347,7 +218,7 @@ export default function CampusSwipe() {
 
   // PWA install prompt state
   const [canInstall, setCanInstall] = useState(false);
-  const [installEvent, setInstallEvent] = useState<any>(null);
+  const [installEvent, setInstallEvent] = useState<BeforeInstallPromptEvent | null>(null);
 
   // Dark mode effect
   useEffect(() => {
@@ -369,12 +240,14 @@ export default function CampusSwipe() {
     }
 
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/sw.js").catch(() => {/* ignore in dev */});
+      navigator.serviceWorker.register("/sw.js").catch(() => {
+        // Ignore registration errors in development
+      });
     }
 
-    const handler = (e: any) => {
+    const handler = (e: globalThis.Event) => {
       e.preventDefault();
-      setInstallEvent(e);
+      setInstallEvent(e as BeforeInstallPromptEvent);
       setCanInstall(true);
     };
     window.addEventListener("beforeinstallprompt", handler);
@@ -677,7 +550,7 @@ export default function CampusSwipe() {
                   variant="outline"
                   onClick={async () => {
                     // Replace with your n8n webhook URL
-                    const webhook = (window as any).__N8N_WEBHOOK__ || "";
+                    const webhook = (window as Window & { __N8N_WEBHOOK__?: string }).__N8N_WEBHOOK__ || "";
                     if (!webhook) {
                       alert("Setze window.__N8N_WEBHOOK__ auf deine n8n Webhook-URL");
                       return;

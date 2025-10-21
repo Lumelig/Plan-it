@@ -310,7 +310,6 @@ const renderLogo = () => {
         src={AppLogo}
         alt="Plan-it Logo"
         className="max-w-full max-h-full object-contain"
-        style={{ width: '5%', height: '5%' }}
       />
     </div>
   );

@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
 import { Heart, Search, Users, UserCircle, X, Check, HelpCircle, MapPin, Calendar, Clock, User, Menu, Settings, Bell, LogOut } from 'lucide-react';
 
-// === FIX: Restored the unique content ID for the uploaded image ===
-// This ID is required for the image to load correctly in this environment.
-const AppLogo = "./logo_Plan_it.png"
-
 const PlanitApp = () => {
+  const AppLogo = "https://raw.githubusercontent.com/Lumelig/Plan-it/master/planit/src/assets/logo_Plan_it.png"; 
+  
   const [activeTab, setActiveTab] = useState('swipe');
   const [currentEventIndex, setCurrentEventIndex] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
@@ -256,7 +254,7 @@ const PlanitApp = () => {
                 Join the {selectedClub.name.toLowerCase()} community and connect with people who share your passion!
               </p>
               <div className="flex gap-3">
-                <button className="flex-1 bg-orange-500 text-white py-3 rounded-xl font-semibold hover:bg-orange-600 transition-colors">
+                <button className="flex-1 bg-orange-600 text-white py-3 rounded-xl font-semibold hover:bg-orange-700 transition-colors">
                   Join Club
                 </button>
                 <button 
@@ -305,27 +303,30 @@ const PlanitApp = () => {
     );
   };
 
+const renderLogo = () => {
+  return (
+    <div className="w-8 h-8 bg-white rounded-full overflow-hidden flex items-center justify-center p-1">
+      <img
+        src={AppLogo}
+        alt="Plan-it Logo"
+        className="max-w-full max-h-full object-contain"
+        style={{ width: '5%', height: '5%' }}
+      />
+    </div>
+  );
+};
+
   return (
     <div className="flex flex-col h-screen bg-gray-50 max-w-md mx-auto relative">
       {/* Header */}
       <div className="bg-gradient-to-r from-orange-600 to-orange-700 text-white p-4 shadow-lg">
         <div className="flex items-center justify-between">
-          
           <div className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-white rounded-full overflow-hidden flex items-center justify-center">
-              {/* This uses the correct AppLogo variable */}
-              <img
-                src={AppLogo}
-                alt="Plan-it Logo"
-                className="w-full h-full object-cover"
-              />
-            </div>
-            <h1 className="text-2xl font-bold">Plan-it</h1>
+            {renderLogo()}
           </div>
-          
           <button 
             onClick={() => setMenuOpen(!menuOpen)}
-            className="p-2 hover:bg-orange-500 rounded-lg transition-colors"
+            className="p-2 hover:bg-orange-500 rounded-lg transition-colors flex-shrink-0"
           >
             <Menu className="w-6 h-6" />
           </button>

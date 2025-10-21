@@ -1,0 +1,10 @@
+{
+  "name": "planit-merged",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Convenience runner for Plan-it web and mobile",
+  "scripts": {
+    "web": "npm --prefix ../campus-swipe-dark run dev",
+    "mobile": "npm --prefix ../campus-swipe-mobile run start -- --lan --port 8082"
+  }
+}

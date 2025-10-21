@@ -1,87 +1,164 @@
-import React, { useState, useMemo } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Dimensions } from 'react-native';
-import { SwipeCard } from '../components/SwipeCard';
+import React, { useMemo, useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { XIcon as IconX, HeartIcon as IconHeart, QuestionIcon as IconQuestion } from 'phosphor-react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SwipeCardNew as SwipeCard } from '../components/SwipeCardNew';
 import { EventCard } from '../components/EventCard';
 import { MOCK_EVENTS } from '../data/mockData';
-
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+import { useAppStore } from '../store/AppStore';
 
 export const SwipeScreen: React.FC = () => {
-  const [liked, setLiked] = useState<number[]>([]);
-  const [passed, setPassed] = useState<number[]>([]);
+  const insets = useSafeAreaInsets();
+  const { likes, passed, like, pass, theme } = useAppStore();
+  const [queue, setQueue] = useState<number[]>([]);
 
-  const deck = useMemo(
-    () => MOCK_EVENTS.filter((e) => !liked.includes(e.id) && !passed.includes(e.id)),
-    [liked, passed]
+  const colors = theme === 'dark'
+    ? {
+        bg: '#0b0f1a',
+        headerBg: '#0f172a',
+        headerBorder: '#1f2937',
+        title: '#f8fafc',
+        subText: '#cbd5e1',
+        chipBg: '#111827',
+        likeBtnBg: '#0ea5e9',
+        likeText: '#ffffff',
+        nopeBtnBg: '#111827',
+        nopeText: '#e2e8f0',
+      }
+    : {
+        bg: '#f8fafc',
+        headerBg: '#ffffff',
+        headerBorder: '#e5e7eb',
+        title: '#1a1a1a',
+        subText: '#666',
+        chipBg: '#f0f0f0',
+        likeBtnBg: '#0f172a',
+        likeText: '#ffffff',
+        nopeBtnBg: '#ffffff',
+        nopeText: '#0f172a',
+      };
+
+  const baseDeck = useMemo(
+    () => MOCK_EVENTS.filter((e) => !likes.includes(e.id) && !passed.includes(e.id)),
+    [likes, passed]
   );
 
-  const topCard = deck[0];
-  const nextCard = deck[1];
+  // initialize/realign queue when source deck changes
+  useEffect(() => {
+    const ids = baseDeck.map((e) => e.id);
+    // keep existing order for remaining ids, append any new ids
+    setQueue((prev) => {
+      const filtered = prev.filter((id) => ids.includes(id));
+      const missing = ids.filter((id) => !filtered.includes(id));
+      return [...filtered, ...missing];
+    });
+  }, [baseDeck]);
+
+  const topId = queue[0];
+  const nextId = queue[1];
+  const topCard = topId ? MOCK_EVENTS.find((e) => e.id === topId) : undefined;
+  const nextCard = nextId ? MOCK_EVENTS.find((e) => e.id === nextId) : undefined;
+
+  // no replay logic; up-swipe simply rotates current card to end of queue
 
   const handleSwipe = (direction: 'left' | 'right') => {
     if (!topCard) return;
     
     if (direction === 'right') {
-      setLiked((prev) => [...prev, topCard.id]);
+      like(topCard.id);
+      setQueue((q) => q.slice(1));
     } else {
-      setPassed((prev) => [...prev, topCard.id]);
+      // Left swipe removes
+      pass(topCard.id);
+      setQueue((q) => q.slice(1));
     }
   };
 
   const handleLike = () => {
     if (topCard) {
-      setLiked((prev) => [...prev, topCard.id]);
+      like(topCard.id);
+      setQueue((q) => q.slice(1));
     }
   };
 
   const handlePass = () => {
     if (topCard) {
-      setPassed((prev) => [...prev, topCard.id]);
+      pass(topCard.id);
+      setQueue((q) => q.slice(1));
     }
   };
 
+  const handleMaybe = () => {
+    // Behaves like up-swipe: send current to the back of the queue
+    setQueue((q) => (q.length > 0 ? [...q.slice(1), q[0]] : q));
+  };
+
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>CampusSwipe</Text>
-        <Text style={styles.likesCount}>{liked.length} Likes</Text>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.bg }] }>
+      <View style={[styles.header, { paddingTop: Math.max(12, insets.top), backgroundColor: colors.headerBg, borderBottomColor: colors.headerBorder }]}>
+        <Text style={[styles.title, { color: colors.title }]}>Plan-it</Text>
+        <Text style={[styles.likesCount, { color: colors.subText, backgroundColor: colors.chipBg }]}>{likes.length} Likes</Text>
       </View>
 
       <View style={styles.cardContainer}>
         {nextCard && (
-          <View style={styles.nextCard}>
-            <EventCard event={nextCard} />
+          <View key={`next-${nextCard.id}`} style={[styles.nextCard, { bottom: 110 + insets.bottom }]}>
+            <View style={{ flex: 1, transform: [{ scale: 0.96 }], opacity: 0.9 }}>
+              <EventCard event={nextCard} />
+            </View>
           </View>
         )}
         {topCard ? (
-          <View style={styles.topCard}>
-            <SwipeCard event={topCard} onSwipe={handleSwipe} />
+          <View key={`top-${topCard.id}`} style={[styles.topCard, { bottom: 100 + insets.bottom }]}>
+            <SwipeCard
+              event={topCard}
+              onSwipe={handleSwipe}
+              onSwipeUp={() => {
+                // Relocate to the end of the queue without removing
+                setQueue((q) => (q.length > 0 ? [...q.slice(1), q[0]] : q));
+              }}
+            />
           </View>
         ) : (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyTitle}>Keine Events mehr</Text>
-            <Text style={styles.emptyText}>Ändere die Filter im Menü.</Text>
+          <View style={[styles.emptyState, { backgroundColor: colors.headerBg }]}>
+            <Text style={[styles.emptyTitle, { color: colors.title }]}>Keine Events mehr</Text>
+            <Text style={[styles.emptyText, { color: colors.subText }]}>Ändere die Filter im Menü.</Text>
           </View>
         )}
       </View>
 
-      <View style={styles.actions}>
+      <View style={[styles.actions, { paddingBottom: Math.max(16, insets.bottom + 8) }] }>
         <TouchableOpacity
-          style={[styles.button, styles.nopeButton]}
+          style={[styles.button, { backgroundColor: colors.nopeBtnBg, borderWidth: 2, borderColor: theme === 'dark' ? '#334155' : '#e5e7eb' }]}
           onPress={handlePass}
           disabled={!topCard}
         >
-          <Text style={styles.buttonText}>✕ Nein</Text>
+          <View style={styles.buttonRow}>
+            <IconX size={20} color={colors.nopeText} />
+            <Text style={[styles.buttonText, { color: colors.nopeText }]}>Nein</Text>
+          </View>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.button, styles.likeButton]}
+          style={[styles.button, { backgroundColor: colors.nopeBtnBg, borderWidth: 2, borderColor: theme === 'dark' ? '#334155' : '#e5e7eb' }]}
+          onPress={handleMaybe}
+          disabled={!topCard}
+        >
+          <View style={styles.buttonRow}>
+            <IconQuestion size={20} color={colors.nopeText} />
+          </View>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.button, { backgroundColor: colors.likeBtnBg }]}
           onPress={handleLike}
           disabled={!topCard}
         >
-          <Text style={styles.buttonText}>❤ Ja</Text>
+          <View style={styles.buttonRow}>
+            <IconHeart size={20} color={colors.likeText} />
+            <Text style={[styles.buttonText, { color: colors.likeText }]}>Ja</Text>
+          </View>
         </TouchableOpacity>
       </View>
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -157,8 +234,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 40,
-    paddingVertical: 20,
+    paddingHorizontal: 24,
+    paddingVertical: 16,
     gap: 20,
   },
   button: {
@@ -183,6 +260,16 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 18,
     fontWeight: '600',
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  likeText: {
     color: '#fff',
+  },
+  nopeText: {
+    color: '#0f172a',
   },
 });

@@ -1,14 +1,13 @@
 {
   "expo": {
-    "name": "CampusSwipe - Plan-it",
+  "name": "Plan-it",
     "slug": "campus-swipe-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+  "icon": "./assets/logo_Plan_it.png",
     "userInterfaceStyle": "light",
-  "newArchEnabled": false,
     "splash": {
-      "image": "./assets/splash-icon.png",
+        "image": "./assets/logo_Plan_it.png",
       "resizeMode": "contain",
       "backgroundColor": "#0f172a"
     },
@@ -18,7 +17,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/logo_Plan_it.png",
         "backgroundColor": "#0f172a"
       },
       "package": "com.planit.campusswipe",
@@ -26,7 +25,7 @@
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "favicon": "./assets/favicon.png",
+      "favicon": "./assets/logo_Plan_it.png",
       "bundler": "metro"
     },
     "plugins": [

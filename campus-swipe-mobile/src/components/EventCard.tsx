@@ -1,35 +1,41 @@
 import React from 'react';
 import { View, Text, Image, StyleSheet } from 'react-native';
+import { Calendar, MapPin } from 'lucide-react-native';
 import { Event } from '../types';
+import { useAppStore } from '../store/AppStore';
 
 interface EventCardProps {
   event: Event;
 }
 
 export const EventCard: React.FC<EventCardProps> = ({ event }) => {
+  const { theme } = useAppStore();
+  const dark = theme === 'dark';
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, { backgroundColor: dark ? '#0f172a' : '#fff' }]}>
       <Image 
         source={{ uri: event.img }} 
         style={styles.image}
         resizeMode="cover"
       />
       <View style={styles.content}>
-        <Text style={styles.title}>{event.title}</Text>
+        <Text style={[styles.title, { color: dark ? '#e5e7eb' : '#1a1a1a' }]}>{event.title}</Text>
         <View style={styles.tags}>
           {event.tags.map((tag, index) => (
-            <View key={index} style={styles.tag}>
-              <Text style={styles.tagText}>{tag}</Text>
+            <View key={index} style={[styles.tag, { backgroundColor: dark ? '#111827' : '#f0f0f0' }]}>
+              <Text style={[styles.tagText, { color: dark ? '#cbd5e1' : '#666' }]}>{tag}</Text>
             </View>
           ))}
         </View>
         <View style={styles.infoRow}>
-          <Text style={styles.infoText}>📅 {event.date}</Text>
+          <Calendar size={16} color={dark ? '#cbd5e1' : '#666'} />
+          <Text style={[styles.infoText, { color: dark ? '#cbd5e1' : '#666' }]}>{event.date}</Text>
         </View>
         <View style={styles.infoRow}>
-          <Text style={styles.infoText}>📍 {event.location}</Text>
+          <MapPin size={16} color={dark ? '#cbd5e1' : '#666'} />
+          <Text style={[styles.infoText, { color: dark ? '#cbd5e1' : '#666' }]}>{event.location}</Text>
         </View>
-        <Text style={styles.description}>{event.description}</Text>
+        <Text style={[styles.description, { color: dark ? '#94a3b8' : '#888' }]}>{event.description}</Text>
       </View>
     </View>
   );
@@ -79,6 +85,9 @@ const styles = StyleSheet.create({
   },
   infoRow: {
     marginBottom: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
   },
   infoText: {
     fontSize: 14,
